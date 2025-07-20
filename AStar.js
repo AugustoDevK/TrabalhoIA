@@ -29,8 +29,9 @@ function buscaAEstrela(estadoInicial) {
     const custosG = new Map(); // Custo real do caminho até o nó
     
     // Métricas de desempenho
-    let nosExplorados = 0;
+    let nosExpandidos = 0;
     let totalSucessoresGerados = 0;
+    let usoMaximoMemoria = 0;
     
     // Estado inicial
     const custoInicialG = 0;
@@ -54,23 +55,17 @@ function buscaAEstrela(estadoInicial) {
         
         if (estadosVisitados.has(noAtual.estado)) continue;
         estadosVisitados.add(noAtual.estado);
-        nosExplorados++;
+        nosExpandidos++;
         
         // Verifica se chegou à solução
         const cubo = Cube.fromString(noAtual.estado);
         if (cubo.isSolved()) {
-            const movimentos = noAtual.caminho.trim().split(/\s+/).filter(m => m.length > 0);
-            const numeroMovimentos = movimentos.length;
-            const ramificacaoMedia = totalSucessoresGerados / nosExplorados;
-            const nosFronteira = listaAberta.length; // Nós que ficaram para explorar
-            
+            const fatorRamificacaoMedio = totalSucessoresGerados / nosExpandidos;
             return {
-                numeroMovimentos: numeroMovimentos,
                 caminho: noAtual.caminho.trim(),
-                nosExplorados: nosExplorados,
-                nosFronteira: nosFronteira,
-                ramificacaoMedia: ramificacaoMedia,
-                custoSolucao: noAtual.custoG
+                nosExpandidos: nosExpandidos,
+                fatorRamificacaoMedio: fatorRamificacaoMedio,
+                usoMaximoMemoria: usoMaximoMemoria
             };
         }
         
@@ -108,15 +103,16 @@ function buscaAEstrela(estadoInicial) {
                 custoF: novoCustoF
             });
         }
+        
+        // Atualiza estimativa de uso de memória
+        usoMaximoMemoria = Math.max(usoMaximoMemoria, listaAberta.length + estadosVisitados.size);
     }
     
     return {
-        numeroMovimentos: null,
         caminho: null,
-        nosExplorados: nosExplorados,
-        nosFronteira: listaAberta.length,
-        ramificacaoMedia: totalSucessoresGerados > 0 ? totalSucessoresGerados / nosExplorados : 0,
-        custoSolucao: null
+        nosExpandidos: nosExpandidos,
+        fatorRamificacaoMedio: totalSucessoresGerados > 0 ? totalSucessoresGerados / nosExpandidos : 0,
+        usoMaximoMemoria: usoMaximoMemoria
     };
 }
 

@@ -1,62 +1,55 @@
 const Cube = require('cubejs');
 const funcoesAuxiliares = require('./FuncoesAuxiliares.js');
 
+Cube.initSolver();
+
 function buscaLargura(estadoInicial) {
     const fila = [[estadoInicial, ""]];
     const estadosVisitados = new Set();
 
     // Métricas de desempenho
-    let nosExplorados = 0;
-    let totalSucessoresGerados = 0;
-    let tamanhoMaximoFronteira = 0;
+    let quantidadeNosExpandidos = 0;
+    let totalDeSucessoresGerados = 0;
+    let usoMaximoMemoria = 0;
 
     while (fila.length > 0) {
-        // Atualiza tamanho máximo da fronteira
-        tamanhoMaximoFronteira = Math.max(tamanhoMaximoFronteira, fila.length);
-        
         const [estadoAtual, caminhoPercorrido] = fila.shift();
 
         if (estadosVisitados.has(estadoAtual)) continue;
         estadosVisitados.add(estadoAtual);
-        nosExplorados++;
+        quantidadeNosExpandidos++;
 
         const cubo = Cube.fromString(estadoAtual);
         if (cubo.isSolved()) {
-            const movimentos = caminhoPercorrido.trim().split(/\s+/).filter(m => m.length > 0);
-            const numeroMovimentos = movimentos.length;
-            const ramificacaoMedia = totalSucessoresGerados / nosExplorados;
-            const nosFronteira = fila.length; // Nós que ficaram na fronteira
-            
+            const fatorRamificacaoMedio = totalDeSucessoresGerados / quantidadeNosExpandidos;
             return {
-                numeroMovimentos: numeroMovimentos,
                 caminho: caminhoPercorrido.trim(),
-                nosExplorados: nosExplorados,
-                nosFronteira: nosFronteira,
-                ramificacaoMedia: ramificacaoMedia
+                nosExpandidos: quantidadeNosExpandidos,
+                fatorRamificacaoMedio: fatorRamificacaoMedio,
+                usoMaximoMemoria: usoMaximoMemoria
             };
         }
 
         const movimentosPossiveis = funcoesAuxiliares.gerarEstados(caminhoPercorrido);
-        totalSucessoresGerados += movimentosPossiveis.length;
+        totalDeSucessoresGerados += movimentosPossiveis.length;
 
         for (const movimentoCompleto of movimentosPossiveis) {
             const novoCubo = Cube.fromString(estadoAtual);
             const proximoMovimento = movimentoCompleto.split(/\s+/).at(-1);
             novoCubo.move(proximoMovimento);
 
-            const novoEstado = novoCubo.asString();
-            if (!estadosVisitados.has(novoEstado)) {
-                fila.push([novoEstado, movimentoCompleto]);
-            }
+            fila.push([novoCubo.asString(), movimentoCompleto]);
         }
+
+        // Atualiza estimativa de uso de memória (número de elementos guardados)
+        usoMaximoMemoria = Math.max(usoMaximoMemoria, fila.length + estadosVisitados.size);
     }
 
     return {
-        numeroMovimentos: null,
         caminho: null,
-        nosExplorados: nosExplorados,
-        nosFronteira: 0,
-        ramificacaoMedia: 0
+        nosExpandidos: quantidadeNosExpandidos,
+        fatorRamificacaoMedio: 0,
+        usoMaximoMemoria: usoMaximoMemoria
     };
 }
 
